@@ -204,6 +204,24 @@ function handleInput(elements) {
 }
 
 // Show booking summary
+async function sendBookingToBackend(bookingData) {
+    try {
+        const response = await fetch('http://localhost:3000/api/bookings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(bookingData)
+        });
+        
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error sending booking to backend:', error);
+        throw error;
+    }
+}
+
 function showBookingSummary(chatWindow) {
     const summary = document.createElement('div');
     summary.className = 'booking-summary';
@@ -241,6 +259,31 @@ function showBookingSummary(chatWindow) {
     `;
 
     chatWindow.appendChild(summary);
+
+    // Prepare booking data
+    const bookingData = {
+        name: chatState.answers.name,
+        checkin: chatState.answers.checkin,
+        checkout: chatState.answers.checkout,
+        guests: parseInt(chatState.answers.guests),
+        breakfast: chatState.answers.breakfast || '',
+        payment: chatState.answers.payment || ''
+    };
+
+    // Send booking to backend
+    sendBookingToBackend(bookingData)
+        .then(response => {
+            if (response.bookingId) {
+                addMessage(`Booking confirmed! Your booking ID is: ${response.bookingId}`, 'bot', false, chatWindow);
+            } else {
+                throw new Error('No booking ID received');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving booking:', error);
+            addMessage('There was an error saving your booking. Please try again later.', 'bot', true, chatWindow);
+        });
+
     addMessage("Thank you for booking with Grand Azure Hotel! We've sent a confirmation email with your booking details.", 'bot');
 }
 
